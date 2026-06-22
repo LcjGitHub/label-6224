@@ -252,6 +252,7 @@ onMounted(loadRecords)
         <p class="subtitle">记录每一次动手维修，方便回顾与追踪复发问题</p>
       </div>
       <n-space>
+        <n-button @click="emit('navigate', 'stats')">统计概览</n-button>
         <n-button @click="emit('navigate', 'tools')">工具管理</n-button>
         <n-button type="primary" @click="openCreate">新增记录</n-button>
       </n-space>

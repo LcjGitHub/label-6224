@@ -16,6 +16,8 @@ from schemas import (
     ToolUpdate,
     Expense,
     ExpenseCreate,
+    RepairStats,
+    MonthlyStat,
 )
 
 app = FastAPI(title="FixIt API", version="1.0.0")
@@ -309,3 +311,47 @@ def delete_expense(expense_id: int) -> None:
         conn.commit()
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="花费不存在")
+
+
+@app.get("/api/stats/repair", response_model=RepairStats)
+def get_repair_stats() -> RepairStats:
+    """获取维修统计概览数据。"""
+    with get_connection() as conn:
+        summary_row = conn.execute(
+            """
+            SELECT
+                COUNT(*) AS total_count,
+                COALESCE(SUM(duration_minutes), 0) AS total_duration_minutes,
+                COALESCE(SUM(CASE WHEN recurred = 1 THEN 1 ELSE 0 END), 0) AS recurred_count
+            FROM repair_records
+            """
+        ).fetchone()
+
+        total_count = summary_row["total_count"]
+        total_duration_minutes = summary_row["total_duration_minutes"]
+        recurred_count = summary_row["recurred_count"]
+        recurred_rate = recurred_count / total_count if total_count > 0 else 0.0
+
+        monthly_rows = conn.execute(
+            """
+            SELECT
+                substr(repair_date, 1, 7) AS month,
+                COUNT(*) AS count
+            FROM repair_records
+            GROUP BY substr(repair_date, 1, 7)
+            ORDER BY month DESC
+            """
+        ).fetchall()
+
+        monthly_stats = [
+            MonthlyStat(month=row["month"], count=row["count"])
+            for row in monthly_rows
+        ]
+
+    return RepairStats(
+        total_count=total_count,
+        total_duration_minutes=total_duration_minutes,
+        recurred_count=recurred_count,
+        recurred_rate=recurred_rate,
+        monthly_stats=monthly_stats,
+    )

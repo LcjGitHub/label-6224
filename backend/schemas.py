@@ -76,3 +76,22 @@ class RepairRecordDetail(RepairRecord):
     """维修记录详情（含花费列表）。"""
 
     expenses: List[Expense] = Field(default_factory=list, description="关联花费列表")
+
+
+class MonthlyStat(BaseModel):
+    """按月统计维修次数。"""
+
+    month: str = Field(..., description="月份 YYYY-MM")
+    count: int = Field(..., description="维修次数")
+
+
+class RepairStats(BaseModel):
+    """维修统计概览。"""
+
+    total_count: int = Field(..., description="维修总次数")
+    total_duration_minutes: int = Field(..., description="累计耗时分钟数")
+    recurred_count: int = Field(..., description="复发次数")
+    recurred_rate: float = Field(..., description="复发占比（0-1）")
+    monthly_stats: List[MonthlyStat] = Field(
+        default_factory=list, description="按月份汇总的维修次数列表"
+    )

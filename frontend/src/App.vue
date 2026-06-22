@@ -3,12 +3,14 @@ import { ref, watch, onMounted } from 'vue'
 import { NConfigProvider, NDialogProvider, NMessageProvider } from 'naive-ui'
 import RecordsView from './components/RecordsView.vue'
 import ToolsView from './components/ToolsView.vue'
+import StatsView from './components/StatsView.vue'
 
 const currentPage = ref('records')
 
 const pageTitles = {
   records: '家庭 DIY 维修小记',
   tools: '常用工具清单',
+  stats: '维修统计概览',
 }
 
 function updateTitle(page) {
@@ -38,6 +40,10 @@ onMounted(() => {
         />
         <ToolsView
           v-show="currentPage === 'tools'"
+          @navigate="handleNavigate"
+        />
+        <StatsView
+          v-show="currentPage === 'stats'"
           @navigate="handleNavigate"
         />
       </n-dialog-provider>
