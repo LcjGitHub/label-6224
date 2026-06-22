@@ -1,5 +1,7 @@
 """Pydantic 请求/响应模型。"""
 
+from typing import List
+
 from pydantic import BaseModel, Field
 
 

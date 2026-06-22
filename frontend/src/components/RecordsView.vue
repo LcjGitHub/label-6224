@@ -224,7 +224,7 @@ const columns = [
           h(
             NButton,
             { size: 'small', onClick: () => openExpenses(row) },
-            { default: () => '花费' },
+            { default: () => '查看花费' },
           ),
           h(
             NButton,
