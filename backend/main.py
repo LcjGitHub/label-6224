@@ -10,9 +10,12 @@ from schemas import (
     RepairRecord,
     RepairRecordCreate,
     RepairRecordUpdate,
+    RepairRecordDetail,
     Tool,
     ToolCreate,
     ToolUpdate,
+    Expense,
+    ExpenseCreate,
 )
 
 app = FastAPI(title="FixIt API", version="1.0.0")
@@ -48,6 +51,21 @@ def row_to_record(row) -> RepairRecord:
     )
 
 
+def row_to_expense(row) -> Expense:
+    """
+     * 将 SQLite Row 转为 Expense 模型。
+     * @param row 数据库行
+     * @returns {Expense}
+     """
+    return Expense(
+        id=row["id"],
+        record_id=row["record_id"],
+        material_name=row["material_name"],
+        amount=row["amount"],
+        purchase_date=row["purchase_date"],
+    )
+
+
 @app.get("/api/records", response_model=List[RepairRecord])
 def list_records() -> List[RepairRecord]:
     """获取全部维修记录。"""
@@ -58,16 +76,22 @@ def list_records() -> List[RepairRecord]:
     return [row_to_record(row) for row in rows]
 
 
-@app.get("/api/records/{record_id}", response_model=RepairRecord)
-def get_record(record_id: int) -> RepairRecord:
-    """获取单条维修记录。"""
+@app.get("/api/records/{record_id}", response_model=RepairRecordDetail)
+def get_record(record_id: int) -> RepairRecordDetail:
+    """获取单条维修记录（含花费列表）。"""
     with get_connection() as conn:
         row = conn.execute(
             "SELECT * FROM repair_records WHERE id = ?", (record_id,)
         ).fetchone()
-    if row is None:
-        raise HTTPException(status_code=404, detail="记录不存在")
-    return row_to_record(row)
+        if row is None:
+            raise HTTPException(status_code=404, detail="记录不存在")
+        expense_rows = conn.execute(
+            "SELECT * FROM expenses WHERE record_id = ? ORDER BY purchase_date DESC, id DESC",
+            (record_id,),
+        ).fetchall()
+    record = row_to_record(row)
+    expenses = [row_to_expense(expense_row) for expense_row in expense_rows]
+    return RepairRecordDetail(**record.model_dump(), expenses=expenses)
 
 
 @app.post("/api/records", response_model=RepairRecord, status_code=201)
@@ -227,3 +251,61 @@ def delete_tool(tool_id: int) -> None:
         conn.commit()
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="工具不存在")
+
+
+@app.get("/api/records/{record_id}/expenses", response_model=List[Expense])
+def list_expenses(record_id: int) -> List[Expense]:
+    """按维修记录编号查询花费列表。"""
+    with get_connection() as conn:
+        record = conn.execute(
+            "SELECT id FROM repair_records WHERE id = ?", (record_id,)
+        ).fetchone()
+        if record is None:
+            raise HTTPException(status_code=404, detail="维修记录不存在")
+        rows = conn.execute(
+            "SELECT * FROM expenses WHERE record_id = ? ORDER BY purchase_date DESC, id DESC",
+            (record_id,),
+        ).fetchall()
+    return [row_to_expense(row) for row in rows]
+
+
+@app.post("/api/expenses", response_model=Expense, status_code=201)
+def create_expense(payload: ExpenseCreate) -> Expense:
+    """新增花费。"""
+    with get_connection() as conn:
+        record = conn.execute(
+            "SELECT id FROM repair_records WHERE id = ?", (payload.record_id,)
+        ).fetchone()
+        if record is None:
+            raise HTTPException(status_code=404, detail="维修记录不存在")
+        cursor = conn.execute(
+            """
+            INSERT INTO expenses
+                (record_id, material_name, amount, purchase_date)
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                payload.record_id,
+                payload.material_name,
+                payload.amount,
+                payload.purchase_date,
+            ),
+        )
+        conn.commit()
+        expense_id = cursor.lastrowid
+        row = conn.execute(
+            "SELECT * FROM expenses WHERE id = ?", (expense_id,)
+        ).fetchone()
+    return row_to_expense(row)
+
+
+@app.delete("/api/expenses/{expense_id}", status_code=204)
+def delete_expense(expense_id: int) -> None:
+    """删除花费。"""
+    with get_connection() as conn:
+        cursor = conn.execute(
+            "DELETE FROM expenses WHERE id = ?", (expense_id,)
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="花费不存在")

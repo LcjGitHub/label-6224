@@ -47,3 +47,30 @@ class Tool(ToolBase):
     """工具响应。"""
 
     id: int
+
+
+class ExpenseBase(BaseModel):
+    """花费公共字段。"""
+
+    material_name: str = Field(..., min_length=1, description="材料名称")
+    amount: float = Field(default=0.0, ge=0, description="金额")
+    purchase_date: str = Field(..., description="购买日期 YYYY-MM-DD")
+
+
+class ExpenseCreate(ExpenseBase):
+    """创建花费。"""
+
+    record_id: int = Field(..., description="关联维修记录ID")
+
+
+class Expense(ExpenseBase):
+    """花费响应。"""
+
+    id: int
+    record_id: int
+
+
+class RepairRecordDetail(RepairRecord):
+    """维修记录详情（含花费列表）。"""
+
+    expenses: List[Expense] = Field(default_factory=list, description="关联花费列表")

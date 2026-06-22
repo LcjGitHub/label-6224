@@ -23,6 +23,7 @@ import {
   fetchRecords,
   updateRecord,
 } from '../api/records'
+import ExpenseDrawer from './ExpenseDrawer.vue'
 
 const emit = defineEmits(['navigate'])
 
@@ -34,6 +35,10 @@ const loading = ref(false)
 const showModal = ref(false)
 const saving = ref(false)
 const editingId = ref(null)
+
+const showExpenseDrawer = ref(false)
+const currentRecordId = ref(null)
+const currentRecordDescription = ref('')
 
 const emptyForm = () => ({
   description: '',
@@ -164,6 +169,16 @@ function confirmDelete(row) {
   })
 }
 
+/**
+ * 打开花费明细侧栏
+ * @param {object} row
+ */
+function openExpenses(row) {
+  currentRecordId.value = row.id
+  currentRecordDescription.value = row.description
+  showExpenseDrawer.value = true
+}
+
 const columns = [
   {
     title: '日期',
@@ -202,10 +217,15 @@ const columns = [
   {
     title: '操作',
     key: 'actions',
-    width: 140,
+    width: 200,
     render: (row) =>
       h(NSpace, { size: 'small' }, {
         default: () => [
+          h(
+            NButton,
+            { size: 'small', onClick: () => openExpenses(row) },
+            { default: () => '花费' },
+          ),
           h(
             NButton,
             { size: 'small', onClick: () => openEdit(row) },
@@ -298,6 +318,12 @@ onMounted(loadRecords)
         </n-space>
       </template>
     </n-modal>
+
+    <expense-drawer
+      v-model:show="showExpenseDrawer"
+      :record-id="currentRecordId"
+      :record-description="currentRecordDescription"
+    />
   </div>
 </template>
 

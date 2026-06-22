@@ -61,6 +61,27 @@ SEED_TOOLS = [
     },
 ]
 
+SEED_EXPENSES = [
+    {
+        "record_id": 1,
+        "material_name": "水龙头阀芯",
+        "amount": 25.5,
+        "purchase_date": "2025-03-12",
+    },
+    {
+        "record_id": 1,
+        "material_name": "生料带",
+        "amount": 3.0,
+        "purchase_date": "2025-03-12",
+    },
+    {
+        "record_id": 3,
+        "material_name": "墙壁开关",
+        "amount": 18.0,
+        "purchase_date": "2025-05-18",
+    },
+]
+
 
 def get_connection() -> sqlite3.Connection:
     """
@@ -70,6 +91,7 @@ def get_connection() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
@@ -122,5 +144,29 @@ def init_db() -> None:
                     (:name, :location, :remark)
                 """,
                 SEED_TOOLS,
+            )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS expenses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                record_id INTEGER NOT NULL,
+                material_name TEXT NOT NULL,
+                amount REAL NOT NULL DEFAULT 0,
+                purchase_date TEXT NOT NULL,
+                FOREIGN KEY (record_id) REFERENCES repair_records(id) ON DELETE CASCADE
+            )
+            """
+        )
+        expense_count = conn.execute("SELECT COUNT(*) FROM expenses").fetchone()[0]
+        if expense_count == 0:
+            conn.executemany(
+                """
+                INSERT INTO expenses
+                    (record_id, material_name, amount, purchase_date)
+                VALUES
+                    (:record_id, :material_name, :amount, :purchase_date)
+                """,
+                SEED_EXPENSES,
             )
         conn.commit()
