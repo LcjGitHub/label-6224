@@ -135,18 +135,19 @@ const columns = [
   {
     title: '工具名称',
     key: 'name',
-    width: 200,
+    width: 160,
     ellipsis: { tooltip: true },
   },
   {
     title: '存放位置',
     key: 'location',
-    width: 200,
+    width: 180,
     ellipsis: { tooltip: true },
   },
   {
     title: '备注说明',
     key: 'remark',
+    minWidth: 280,
     ellipsis: { tooltip: true },
   },
   {
