@@ -24,6 +24,8 @@ import {
   updateRecord,
 } from '../api/records'
 
+const emit = defineEmits(['navigate'])
+
 const message = useMessage()
 const dialog = useDialog()
 
@@ -229,7 +231,10 @@ onMounted(loadRecords)
         <h1>家庭 DIY 维修小记</h1>
         <p class="subtitle">记录每一次动手维修，方便回顾与追踪复发问题</p>
       </div>
-      <n-button type="primary" @click="openCreate">新增记录</n-button>
+      <n-space>
+        <n-button @click="emit('navigate', 'tools')">工具管理</n-button>
+        <n-button type="primary" @click="openCreate">新增记录</n-button>
+      </n-space>
     </header>
 
     <n-card title="维修记录" :bordered="false" class="table-card">

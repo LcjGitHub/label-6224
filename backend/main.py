@@ -6,7 +6,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import get_connection, init_db
-from schemas import RepairRecord, RepairRecordCreate, RepairRecordUpdate
+from schemas import (
+    RepairRecord,
+    RepairRecordCreate,
+    RepairRecordUpdate,
+    Tool,
+    ToolCreate,
+    ToolUpdate,
+)
 
 app = FastAPI(title="FixIt API", version="1.0.0")
 
@@ -131,3 +138,92 @@ def delete_record(record_id: int) -> None:
         conn.commit()
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="记录不存在")
+
+
+def row_to_tool(row) -> Tool:
+    """
+     * 将 SQLite Row 转为 Tool 模型。
+     * @param row 数据库行
+     * @returns {Tool}
+     """
+    return Tool(
+        id=row["id"],
+        name=row["name"],
+        location=row["location"],
+        remark=row["remark"],
+    )
+
+
+@app.get("/api/tools", response_model=List[Tool])
+def list_tools() -> List[Tool]:
+    """获取全部工具。"""
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT * FROM tools ORDER BY id DESC"
+        ).fetchall()
+    return [row_to_tool(row) for row in rows]
+
+
+@app.post("/api/tools", response_model=Tool, status_code=201)
+def create_tool(payload: ToolCreate) -> Tool:
+    """新建工具。"""
+    with get_connection() as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO tools
+                (name, location, remark)
+            VALUES (?, ?, ?)
+            """,
+            (
+                payload.name,
+                payload.location,
+                payload.remark,
+            ),
+        )
+        conn.commit()
+        tool_id = cursor.lastrowid
+        row = conn.execute(
+            "SELECT * FROM tools WHERE id = ?", (tool_id,)
+        ).fetchone()
+    return row_to_tool(row)
+
+
+@app.put("/api/tools/{tool_id}", response_model=Tool)
+def update_tool(tool_id: int, payload: ToolUpdate) -> Tool:
+    """更新工具。"""
+    with get_connection() as conn:
+        existing = conn.execute(
+            "SELECT id FROM tools WHERE id = ?", (tool_id,)
+        ).fetchone()
+        if existing is None:
+            raise HTTPException(status_code=404, detail="工具不存在")
+        conn.execute(
+            """
+            UPDATE tools
+            SET name = ?, location = ?, remark = ?
+            WHERE id = ?
+            """,
+            (
+                payload.name,
+                payload.location,
+                payload.remark,
+                tool_id,
+            ),
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT * FROM tools WHERE id = ?", (tool_id,)
+        ).fetchone()
+    return row_to_tool(row)
+
+
+@app.delete("/api/tools/{tool_id}", status_code=204)
+def delete_tool(tool_id: int) -> None:
+    """删除工具。"""
+    with get_connection() as conn:
+        cursor = conn.execute(
+            "DELETE FROM tools WHERE id = ?", (tool_id,)
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="工具不存在")

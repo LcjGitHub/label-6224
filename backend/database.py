@@ -43,6 +43,24 @@ SEED_RECORDS = [
     },
 ]
 
+SEED_TOOLS = [
+    {
+        "name": "活动扳手",
+        "location": "工具箱第一层",
+        "remark": "8寸和12寸各一把，用于拧动不同大小的螺母",
+    },
+    {
+        "name": "十字螺丝刀套装",
+        "location": "工具箱第二层",
+        "remark": "PH0-PH3规格，电器维修常用",
+    },
+    {
+        "name": "测电笔",
+        "location": "工具挂板",
+        "remark": "非接触式，检测电路是否带电使用前请校验",
+    },
+]
+
 
 def get_connection() -> sqlite3.Connection:
     """
@@ -57,7 +75,7 @@ def get_connection() -> sqlite3.Connection:
 
 def init_db() -> None:
     """
-     * 创建维修记录表，并在空库时写入 seed 数据。
+     * 创建维修记录表和工具表，并在空库时写入 seed 数据。
      """
     with get_connection() as conn:
         conn.execute(
@@ -82,5 +100,27 @@ def init_db() -> None:
                     (:description, :repair_date, :tools, :duration_minutes, :recurred)
                 """,
                 SEED_RECORDS,
+            )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tools (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                location TEXT NOT NULL DEFAULT '',
+                remark TEXT NOT NULL DEFAULT ''
+            )
+            """
+        )
+        tool_count = conn.execute("SELECT COUNT(*) FROM tools").fetchone()[0]
+        if tool_count == 0:
+            conn.executemany(
+                """
+                INSERT INTO tools
+                    (name, location, remark)
+                VALUES
+                    (:name, :location, :remark)
+                """,
+                SEED_TOOLS,
             )
         conn.commit()
