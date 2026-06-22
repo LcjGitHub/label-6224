@@ -183,6 +183,7 @@ onMounted(loadTools)
         <p class="subtitle">管理家中常用工具，方便快速找到存放位置</p>
       </div>
       <n-space>
+        <n-button @click="emit('navigate', 'stats')">统计概览</n-button>
         <n-button @click="emit('navigate', 'records')">返回维修记录</n-button>
         <n-button type="primary" @click="openCreate">新增工具</n-button>
       </n-space>

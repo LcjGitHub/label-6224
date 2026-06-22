@@ -35,15 +35,15 @@ onMounted(() => {
     <n-message-provider>
       <n-dialog-provider>
         <RecordsView
-          v-show="currentPage === 'records'"
+          v-if="currentPage === 'records'"
           @navigate="handleNavigate"
         />
         <ToolsView
-          v-show="currentPage === 'tools'"
+          v-if="currentPage === 'tools'"
           @navigate="handleNavigate"
         />
         <StatsView
-          v-show="currentPage === 'stats'"
+          v-if="currentPage === 'stats'"
           @navigate="handleNavigate"
         />
       </n-dialog-provider>

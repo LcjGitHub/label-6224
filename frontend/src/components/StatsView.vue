@@ -18,7 +18,7 @@ const stats = ref(null)
 const loading = ref(false)
 
 const formattedDuration = computed(() => {
-  if (!stats.value) return '0'
+  if (!stats.value) return ''
   const total = stats.value.total_duration_minutes
   if (total < 60) return `${total} 分钟`
   const hours = Math.floor(total / 60)
@@ -28,7 +28,7 @@ const formattedDuration = computed(() => {
 })
 
 const recurredRatePercent = computed(() => {
-  if (!stats.value) return '0.0%'
+  if (!stats.value) return ''
   return (stats.value.recurred_rate * 100).toFixed(1) + '%'
 })
 
@@ -74,16 +74,16 @@ onMounted(loadStats)
     </header>
 
     <div class="stats-cards">
-      <n-card :bordered="false" class="stat-card">
-        <n-statistic label="维修总次数" :value="stats?.total_count ?? 0" />
+      <n-card :bordered="false" class="stat-card" :loading="loading">
+        <n-statistic label="维修总次数" :value="stats?.total_count" />
       </n-card>
-      <n-card :bordered="false" class="stat-card">
+      <n-card :bordered="false" class="stat-card" :loading="loading">
         <n-statistic label="累计耗时" :value="formattedDuration" />
       </n-card>
-      <n-card :bordered="false" class="stat-card">
-        <n-statistic label="复发次数" :value="stats?.recurred_count ?? 0" />
+      <n-card :bordered="false" class="stat-card" :loading="loading">
+        <n-statistic label="复发次数" :value="stats?.recurred_count" />
       </n-card>
-      <n-card :bordered="false" class="stat-card">
+      <n-card :bordered="false" class="stat-card" :loading="loading">
         <n-statistic label="复发占比" :value="recurredRatePercent" />
       </n-card>
     </div>
@@ -96,7 +96,11 @@ onMounted(loadStats)
         :bordered="false"
         striped
         size="small"
-      />
+      >
+        <template #empty>
+          <div class="empty-tip">暂无月度维修数据</div>
+        </template>
+      </n-data-table>
     </n-card>
   </div>
 </template>
@@ -143,6 +147,13 @@ onMounted(loadStats)
 .table-card {
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.empty-tip {
+  padding: 32px 0;
+  color: #9ca3af;
+  text-align: center;
+  font-size: 0.95rem;
 }
 
 @media (max-width: 768px) {
